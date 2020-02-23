@@ -39,4 +39,5 @@ vendor/*
 tests/*
 public/upload/*
 var/log/*
+var/log/custom/*
 new_framework.md
