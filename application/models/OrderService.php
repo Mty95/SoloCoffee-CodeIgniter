@@ -8,6 +8,7 @@ use App\Model\Order\Repository;
 use App\Model\OrderAddress\OrderAddress;
 use App\Model\OrderItem\OrderItem;
 use App\Model\PaymentMethod\Method;
+use App\Model\User\User;
 
 class OrderService
 {
@@ -42,6 +43,29 @@ class OrderService
 		$this->itemRepository = $itemRepository;
 	}
 
+	public function getLastByUser(User $user): ?Order
+	{
+		/** @var Order $order */
+		$order = $this->orderRepository->where('user_id', $user->id)->last(1);
+
+		return $order;
+	}
+
+	public function getLastAddressByUser(User $user): ?OrderAddress
+	{
+		$order = $this->getLastByUser($user);
+
+		if (null === $order)
+		{
+			return null;
+		}
+
+		/** @var OrderAddress $address */
+		$address = $this->addressRepository->where('order_id', $order->id)->last(1);
+
+		return $address;
+	}
+
 	public function getDetails(Order $order): array
 	{
 		$address = $this->addressRepository->where('order_id', $order->id)->get();
@@ -61,6 +85,12 @@ class OrderService
 		$order->fill($cart->toArray());
 		$order->payment_method = $method->getMethodName();
 		$order->payment_data = $method->getAdditionalData();
+
+		if ($method->isCanProcessing())
+		{
+			$order->status = 'processing';
+		}
+
 		$this->orderRepository->save($order);
 
 		$order->increment_id = 'OR-' . sprintf('%08d', $order->id);
@@ -80,6 +110,19 @@ class OrderService
 			$orderItem->order_id = $order->id;
 
 			$this->itemRepository->save($orderItem);
+		}
+
+		return $order;
+	}
+
+	public function updateOfflineOrder(Order $order, Method $method): Order
+	{
+		$order->payment_data = $method->getAdditionalData();
+		$order->status = 'pending';
+
+		if ($order->hasChanged())
+		{
+			$this->orderRepository->save($order);
 		}
 
 		return $order;

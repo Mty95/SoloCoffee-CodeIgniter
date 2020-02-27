@@ -55,17 +55,21 @@ class Checkout extends NewRestController
 
 		/** @var \App\Model\Checkout $checkout */
 		$checkout = Services::take(\App\Model\Checkout::class, [$this->user]);
+		$lastAddress = $checkout->getLastAddressInfo();
 		try {
 			$response = $checkout->getAddressInfo();
 		} catch (Exception $e) {
 			$this->fail([
 				'message' => $e->getMessage(),
+				'last_address' => $lastAddress,
 			]);
 			return;
 		}
 
 		$this->success([
 			'address_data' => $response,
+			'last_address' => $lastAddress,
+
 		]);
 	}
 

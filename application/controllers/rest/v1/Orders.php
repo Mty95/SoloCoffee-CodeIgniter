@@ -25,7 +25,7 @@ class Orders extends NewRestController
 	{
 		parent::__construct();
 
-		$this->repository = null;
+		$this->repository = \App\Model\Order\Repository::take();
 		$this->facade = null;
 
 		$this->auth = new AuthorizationToken();
@@ -53,8 +53,11 @@ class Orders extends NewRestController
 	 */
     public function list(): void
 	{
+		$this->assertUserIsAuthenticated();
+		$orders = $this->repository->where('user_id', $this->user->id)->order('DESC')->findAll();
+
 		$this->success([
-			'data' => Collection::toArray($this->repository->findAll())
+			'orders' => Collection::toExport($orders)
 		]);
 	}
 

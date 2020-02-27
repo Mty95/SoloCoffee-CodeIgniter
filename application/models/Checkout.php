@@ -7,6 +7,7 @@ use App\Model\CartAddress\CartAddress;
 use App\Model\CartAddress\Repository as AddressRepository;
 use App\Model\Order\Order;
 use App\Model\Order\Repository;
+use App\Model\PaymentMethod\PagoEfectivo;
 use App\Model\User\User;
 use Exception;
 use Mty95\NewFramework\Exceptions\DataException;
@@ -74,6 +75,24 @@ class Checkout
 		if (null === $address)
 		{
 			throw new Exception('You need to set your address information before to pay your order.');
+		}
+
+		return $address->toExport();
+	}
+
+	public function getLastAddressInfo(): array
+	{
+		$address = $this->orderService->getLastAddressByUser($this->user);
+
+		if (null === $address)
+		{
+			return [
+				'name' => '',
+				'dni' => '',
+				'cellphone' => '',
+				'line1' => '',
+				'line2' => '',
+			];
 		}
 
 		return $address->toExport();
@@ -189,13 +208,29 @@ class Checkout
 			$method = new \App\Model\PaymentMethod\Culqi();
 		}
 
+		if ($data['method'] === 'pago_efectivo')
+		{
+			$method = new PagoEfectivo();
+		}
+
 		if (null === $method)
 		{
 			throw new Exception('No method available.');
 		}
 
-		$method->execute($cart, $address, $this->user, $data['additional_data'] ?? []);
+		if ($method->isCanProcessing())
+		{
+			$method->execute($cart, $address, $this->user, $data['additional_data'] ?? []);
+		}
+
 		$order = $this->orderService->createOrder($cart, $address, $method);
+
+		if ($method->isOffline())
+		{
+			$method->executeOffline($order, $address, $this->user, $data['additional_data'] ?? []);
+			$this->orderService->updateOfflineOrder($order, $method);
+		}
+
 		$this->deleteCurrentCart($cart, $address);
 
 		return [

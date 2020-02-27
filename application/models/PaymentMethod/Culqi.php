@@ -11,6 +11,9 @@ class Culqi extends Method
 {
 	protected $additional_data = [];
 	protected $method_name = 'culqi';
+	protected $can_processing = true;
+	protected $is_offline = false;
+	protected $currencies_supported = ['PEN'];
 
 	/**
 	 * @var array

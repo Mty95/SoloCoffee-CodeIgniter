@@ -41,7 +41,6 @@ class PaymentMethod
 		$methods[] = [
 			'code' => 'pago_efectivo',
 			'title' => 'PagoEfectivo',
-
 		];
 
 		return $methods;
