@@ -117,4 +117,25 @@ class Checkout extends NewRestController
 			'data' => $result,
 		]);
 	}
+
+
+	/**
+	 * @Rest(method="POST", route="/payment-method")
+	 */
+	public function processPayment(): void
+	{
+		$this->assertUserIsAuthenticated();
+
+		/** @var \App\Model\Checkout $checkout */
+		$checkout = Services::take(\App\Model\Checkout::class, [$this->user]);
+
+		try {
+			$result = $checkout->processPayment($this->post());
+		} catch (Exception $e) {
+			$this->fail(['message' => $e->getMessage()]);
+			return;
+		}
+
+		$this->success($result);
+	}
 }

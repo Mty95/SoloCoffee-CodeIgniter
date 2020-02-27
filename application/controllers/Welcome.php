@@ -8,9 +8,6 @@ class Welcome extends \Mty95\AdminDashboard\ThemeController
     public function index(): void
     {
         $this->render('message', ['title' => 'Welcome to CodeIgniter']);
-
-		$cart = \App\Services::take(\App\Model\Cart::class, [new \App\Model\User\User()]);
-		// var_dump($cart);
     }
 
     public function ci4(): void

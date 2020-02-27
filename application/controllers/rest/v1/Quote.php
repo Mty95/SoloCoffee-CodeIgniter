@@ -25,9 +25,10 @@ class Quote extends NewRestController
 	}
 
 	/**
-	 * @Rest(method="POST", route"/payment-method")
+	 * @deprecated
+	 * @Rest(method="POST", route"/payment-method", enabled="false")
 	 */
-	public function getOrderDetailsBeforeCheckout(): void
+	public function getOrderDetailsBeforeCheckoutDeprecated(): void
 	{
 		$this->success([
 			'details' => [],
