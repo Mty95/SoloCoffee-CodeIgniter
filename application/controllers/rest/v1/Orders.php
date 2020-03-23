@@ -8,7 +8,7 @@ use App\Model\User\Repository;
 use App\Model\User\User;
 use Mty95\NewFramework\AbstractRestController;
 
-class Orders extends AbstractRestController
+class Orders extends \Core\API\Authenticated
 {
     protected $repository;
     protected $facade;
@@ -25,27 +25,9 @@ class Orders extends AbstractRestController
 	{
 		parent::__construct();
 
+		$this->assertUserIsAuthenticated();
 		$this->repository = \App\Model\Order\Repository::take();
 		$this->facade = null;
-
-		$this->auth = new AuthorizationToken();
-		$this->userData = $this->auth->userData();
-
-		if (!isset($this->userData->status) && isset($this->userData->id))
-		{
-			$this->isAuthenticated = true;
-			$userRepository = Repository::take();
-			$this->user = $userRepository->find($this->userData->id);
-		}
-	}
-
-	private function assertUserIsAuthenticated(): void
-	{
-		if (!$this->isAuthenticated)
-		{
-			$this->fail(['message' => 'User not authenticated.']);
-			return;
-		}
 	}
 
 	/**
@@ -53,7 +35,6 @@ class Orders extends AbstractRestController
 	 */
     public function list(): void
 	{
-		$this->assertUserIsAuthenticated();
 		$orders = $this->repository->where('user_id', $this->user->id)->order('DESC')->findAll();
 
 		$this->success([
@@ -68,8 +49,6 @@ class Orders extends AbstractRestController
 	 */
     public function show(Order $order): void
 	{
-		$this->assertUserIsAuthenticated();
-
 		if ($order->user_id !== $this->user->id)
 		{
 			$this->fail(['message' => 'User can not access to this order.', $order->user_id, $this->user->id]);

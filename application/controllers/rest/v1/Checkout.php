@@ -6,7 +6,7 @@ use App\Model\User\User;
 use Mty95\NewFramework\AbstractRestController;
 use NewFramework\Exceptions\ValidationException;
 
-class Checkout extends AbstractRestController
+class Checkout extends \Core\API\Authenticated
 {
     protected $repository;
     protected $facade;
@@ -18,64 +18,38 @@ class Checkout extends AbstractRestController
 	 * @var User $user
 	 */
 	protected $user;
+	/**
+	 * @var \App\Model\CustomerAddress\Repository
+	 */
+	private $addressRepository;
 
-    public function __construct()
+	public function __construct()
 	{
 		parent::__construct();
 
+		$this->assertUserIsAuthenticated();
 		$this->repository = null;
 		$this->facade = null;
 
-		$this->auth = new AuthorizationToken();
-		$this->userData = $this->auth->userData();
+		$this->addressRepository = \App\Model\CustomerAddress\Repository::take();
 
-		if (!isset($this->userData->status) && isset($this->userData->id))
-		{
-			$this->isAuthenticated = true;
-			$userRepository = Repository::take();
-			$this->user = $userRepository->find($this->userData->id);
-		}
-	}
-
-	private function assertUserIsAuthenticated(): void
-	{
-		if (!$this->isAuthenticated)
-		{
-			$this->fail(['message' => 'User not authenticated.']);
-			return;
-		}
 	}
 
 	/**
 	 * @Rest(method="GET", route="/address-info")
 	 */
-	public function getAddressInfo(): void
+	public function getAddressInfo(): bool
 	{
-		$this->assertUserIsAuthenticated();
-		/*
-		$checkout = $this->getCheckoutModel();
-		$lastAddress = $checkout->getLastAddressInfo();
-		try {
-			$response = $checkout->getAddressInfo();
-		} catch (Exception $e) {
-			$this->fail([
-				'message' => $e->getMessage(),
-				'last_address' => $lastAddress,
-			]);
-			return;
-		}*/
-
 		$lastAddressId = 0;
-		$addresses = \App\Model\CustomerAddress\Repository::take()->where('user_id', $this->user->id)->findAll();
+		$addresses = $this->addressRepository->ofUser($this->user)->findAll();
+
 		foreach ($addresses as $address)
 		{
 			$lastAddressId = $address->id;
 			break;
 		}
 
-		$this->success([
-//			'address_data' => $response,
-//			'last_address' => $lastAddress,
+		return $this->success([
 			'addresses' => \App\Library\Collection::toExport($addresses),
 			'last_address_id' => $lastAddressId,
 
@@ -85,24 +59,17 @@ class Checkout extends AbstractRestController
 	/**
 	 * @Rest(method="POST", route="/address-info")
 	 */
-    public function setAddressInfo(): void
+    public function setAddressInfo(): bool
 	{
-		$this->assertUserIsAuthenticated();
 		$checkout = $this->getCheckoutModel();
+
 		try {
 			$response = $checkout->setAddressInfo($this->post());
-		} catch (ValidationException $e) {
-			$this->fail([
-				'message' => $e->getMessage(),
-				'errors' => $checkout->errors(),
-			]);
-			return;
-		} catch (Exception $e) {
-			$this->fail(['message' => $e->getMessage()]);
-			return;
+		} catch (Throwable $exception) {
+			return $this->failException($exception);
 		}
 
-		$this->success([
+		return $this->success([
 			'data' => $response,
 		]);
 	}
@@ -110,19 +77,17 @@ class Checkout extends AbstractRestController
 	/**
 	 * @Rest(method="GET", route="/payment-method")
 	 */
-	public function getPaymentMethodInfo(): void
+	public function getPaymentMethodInfo(): bool
 	{
-		$this->assertUserIsAuthenticated();
 		$checkout = $this->getCheckoutModel();
 
 		try {
 			$result = $checkout->getPaymentMethods();
-		} catch (Exception $e) {
-			$this->fail(['message' => $e->getMessage()]);
-			return;
+		} catch (Throwable $exception) {
+			return $this->failException($exception);
 		}
 
-		$this->success([
+		return $this->success([
 			'data' => $result,
 		]);
 	}
@@ -131,19 +96,17 @@ class Checkout extends AbstractRestController
 	/**
 	 * @Rest(method="POST", route="/payment-method")
 	 */
-	public function processPayment(): void
+	public function processPayment(): bool
 	{
-		$this->assertUserIsAuthenticated();
 		$checkout = $this->getCheckoutModel();
 
 		try {
 			$result = $checkout->processPayment($this->post());
-		} catch (Exception $e) {
-			$this->fail(['message' => $e->getMessage()]);
-			return;
+		} catch (Throwable $exception) {
+			return $this->failException($exception);
 		}
 
-		$this->success($result);
+		return $this->success($result);
 	}
 
 	/**

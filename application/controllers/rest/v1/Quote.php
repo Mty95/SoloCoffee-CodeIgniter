@@ -1,26 +1,33 @@
 <?php
 use Mty95\NewFramework\AbstractRestController;
 
-class Quote extends AbstractRestController
+class Quote extends \Core\API\Authenticated
 {
     protected $repository;
     protected $facade;
+
+	/**
+	 * @var \App\Model\CartService
+	 */
+    protected $cart;
 
     public function __construct()
 	{
 		parent::__construct();
 
+		$this->assertUserIsAuthenticated();
 		$this->repository = null;
 		$this->facade = null;
+		$this->cart = Services::take(\App\Model\CartService::class, [$this->user]);
 	}
 
 	/**
 	 * @Rest(method="GET", route="/payment-method")
 	 */
-    public function getPaymentMethods(): void
+    public function getPaymentMethods(): bool
 	{
-		$this->success([
-			'methods' => (new \App\Model\PaymentMethod())->getMethods()
+		return $this->success([
+			'methods' => (new \App\Model\PaymentMethod())->getMethods($this->cart)
 		]);
 	}
 
@@ -28,9 +35,9 @@ class Quote extends AbstractRestController
 	 * @deprecated
 	 * @Rest(method="POST", route"/payment-method", enabled="false")
 	 */
-	public function getOrderDetailsBeforeCheckoutDeprecated(): void
+	public function getOrderDetailsBeforeCheckoutDeprecated(): bool
 	{
-		$this->success([
+		return $this->success([
 			'details' => [],
 			'payment_method' => [],
 		]);

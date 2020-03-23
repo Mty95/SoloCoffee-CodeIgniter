@@ -47,10 +47,11 @@ class Cart extends Authenticated
 	/**
 	 * @Rest(method="GET", route="/item/{slug}")
 	 * @param Product $product
+	 * @return bool
 	 */
-	public function getProduct(Product $product): void
+	public function getProduct(Product $product): bool
 	{
-		$this->success([
+		return $this->success([
 			'item' => $this->cart->getItemDetails($product),
 			'cart' => $this->cart->getDetails(),
 		]);
@@ -59,10 +60,11 @@ class Cart extends Authenticated
 	/**
 	 * @Rest(method="GET", route="/category/{slug}")
 	 * @param Category $category
+	 * @return bool
 	 */
-	public function getProductFromCategory(Category $category): void
+	public function getProductFromCategory(Category $category): bool
 	{
-		$this->success([
+		return $this->success([
 			'cart' => $this->cart->getDetails(),
 			'category' => $category->toExport(),
 			'products' => $this->cart->getItemsFromCategory($category),
@@ -72,9 +74,9 @@ class Cart extends Authenticated
 	/**
 	 * @Rest(method="GET", route="/")
 	 */
-	public function showDetails(): void
+	public function showDetails(): bool
 	{
-		$this->success([
+		return $this->success([
 			'cart' => $this->cart->getDetails(),
 		]);
 	}
@@ -82,16 +84,15 @@ class Cart extends Authenticated
 	/**
 	 * @Rest(method="PUT", route="/")
 	 */
-    public function addToCart(): void
+    public function addToCart(): bool
 	{
 		try {
 			$product = $this->cart->addItem($this->put());
-		} catch (ValidationException $e) {
-			$this->fail(['message' => $e->getMessage(), 'errors' => $this->cart->errors()]);
-			return;
+		} catch (Throwable $exception) {
+			return $this->failException($exception);
 		}
 
-		$this->success([
+		return $this->success([
 			'product' => $this->cart->getItemDetails($product),
 			'cart' => $this->cart->getDetails(),
 		]);
@@ -100,16 +101,15 @@ class Cart extends Authenticated
 	/**
 	 * @Rest(method="PATCH", route="/")
 	 */
-	public function updateCart(): void
+	public function updateCart(): bool
 	{
 		try {
 			$product = $this->cart->updateItem($this->patch());
-		} catch (ValidationException $e) {
-			$this->fail(['message' => $e->getMessage(), 'errors' => $this->cart->errors()]);
-			return;
+		} catch (Throwable $exception) {
+			return $this->failException($exception);
 		}
 
-		$this->success([
+		return $this->success([
 			'product' => $this->cart->getItemDetails($product),
 			'cart' => $this->cart->getDetails(),
 		]);
@@ -119,17 +119,17 @@ class Cart extends Authenticated
 	 * @Rest(method="DELETE", route="/{slug}")
 	 *
 	 * @param Product $product
+	 * @return bool
 	 */
-	public function removeFromCart(Product $product): void
+	public function removeFromCart(Product $product): bool
 	{
 		try {
 			$this->cart->removeItem($product);
-		} catch (Exception $e) {
-			$this->fail(['message' => $e->getMessage(), 'errors' => $this->cart->errors()]);
-			return;
+		} catch (Throwable $exception) {
+			return $this->failException($exception);
 		}
 
-		$this->success([
+		return $this->success([
 			'cart' => $this->cart->getDetails(),
 		]);
 	}

@@ -16,7 +16,7 @@ use NewFramework\Exceptions\ValidationException;
  * https://www.pinterest.com/pin/450852612686704550/
  * 
  */
-class Authentication extends AbstractRestController
+class Authentication extends \NewFramework\RestController
 {
     protected $repository;
     protected $facade;
@@ -32,24 +32,19 @@ class Authentication extends AbstractRestController
 	/**
 	 * @Rest(method="POST", route="/login")
 	 */
-	public function login(): void
+	public function login(): bool
 	{
 		$facade = new UserFacade();
 
 		try {
-			/** @var \App\Model\User\User $user */
 			$user = $facade->login((array)$this->post());
-		} catch (ValidationFieldException $e) {
-			$this->fail(['message' => $e->getMessage(), 'errors' => [$e->getField() => $e->getMessage()]]);
-			return;
-		} catch (ValidationException $e) {
-			$this->fail(['message' => $e->getMessage(), 'errors' => $facade->errors()]);
-			return;
+		} catch (Throwable $exception) {
+			return $this->failException($exception);
 		}
 
 		$authToken = new \App\Library\Mty95\AuthorizationToken();
 
-		$this->success([
+		return $this->success([
 			'user_details' => $user->toExport(),
 			'username' => $user->username,
 			'auth_token' => $authToken->generateUserToken($user->id),
@@ -59,89 +54,19 @@ class Authentication extends AbstractRestController
 	/**
 	 * @Rest(method="POST", route="/register")
 	 */
-	public function register(): void
+	public function register(): bool
 	{
 		$facade = new UserFacade();
 
 		try {
 			$user = $facade->register((array)$this->post());
-		} catch (DataException | EntityException $e) {
-			$this->fail(['message' => $e->getMessage()]);
-			return;
-		} catch (ValidationException $e) {
-			$this->fail(['message' => $e->getMessage(), 'errors' => $facade->errors()]);
-			return;
+		} catch (Throwable $exception) {
+			return $this->failException($exception);
 		}
 
-		$this->success([
+		return $this->success([
 			'message' => 'User successful registered.',
 			'username' => $user->username,
 		]);
-	}
-
-
-	/**
-	 * @Rest(method="GET", route="/", enabled=false)
-	 */
-    public function list(): void
-	{
-		$this->success([
-			'data' => Collection::toArray($this->repository->findAll())
-		]);
-	}
-
-	/**
-	 * @Rest(method="GET", route="/{id}", enabled=false)
-	 *
-	 * @param Entity $entity
-	 */
-    public function show(Entity $entity): void
-	{
-        $this->success([
-            'entity' => $entity->toArray(),
-        ]);
-	}
-
-	/**
-	 * @Rest(method="POST", route="/", enabled=false)
-	 *
-	 * @param Entity $entity
-	 */
-    public function create(): void
-	{
-		$entity = new Entity();
-		$entity->fill((array) $this->post());
-		$this->repository->save($entity);
-
-		$this->success([
-            'entity_id' => $entity->id,
-        ]);
-	}
-
-	/**
-	 * @Rest(method="PUT", route="/{id}", enabled=false)
-	 *
-	 * @param Entity $entity
-	 */
-    public function update(Entity $entity): void
-	{
-		$entity->fill((array) $this->post());
-		$this->repository->save($entity);
-
-		$this->success([
-            'entity' => $entity->toArray(),
-        ]);
-	}
-
-	/**
-	 * @Rest(method="DELETE", route="/{id}", enabled=false)
-	 *
-	 * @param Entity $entity
-	 */
-    public function remove(Entity $entity): void
-	{
-        $this->repository->delete($entity);
-
-        $this->success(['method' => 'remove']);
 	}
 }

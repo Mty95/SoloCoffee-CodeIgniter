@@ -41,3 +41,5 @@ public/upload/*
 var/log/*
 var/log/custom/*
 new_framework.md
+application/models/PaymentMethod/PagoEfectivoClient.php
+var/log/custom/new_framework.log

@@ -8,61 +8,34 @@ use Mty95\NewFramework\AbstractRestController;
 use NewFramework\Exceptions\EntityException;
 use NewFramework\Exceptions\ValidationException;
 
-class Profile extends AbstractRestController
+class Profile extends \Core\API\Authenticated
 {
     protected $repository;
     protected $facade;
 
-    protected $auth;
-    protected $userData;
     protected $isAuthenticated = false;
-    protected $user;
 
     public function __construct()
 	{
 		parent::__construct();
 
+		$this->assertUserIsAuthenticated();
 		$this->repository = Repository::take();
 		$this->facade = new UserFacade();
-		$this->auth = new AuthorizationToken();
-		$this->userData = $this->auth->userData();
-
-		if (!isset($this->userData->status) && isset($this->userData->id))
-		{
-			$this->isAuthenticated = true;
-			$this->user = $this->repository->find($this->userData->id);
-		}
-	}
-
-	private function assertUserIsAuthenticated(): void
-	{
-		if (!$this->isAuthenticated)
-		{
-			$this->fail(['message' => 'User not authenticated.']);
-			return;
-		}
 	}
 
 	/**
 	 * @Rest(method="PATCH", route="/update")
 	 */
-    public function updateProfile(): void
+    public function updateProfile(): bool
 	{
 		try {
 			$this->facade->updateProfile($this->user, $this->patch());
-		} catch (ValidationException $e) {
-			$this->fail([
-				'message' => $e->getMessage(),
-				'errors' => $this->facade->errors(),
-			]);
-			return;
-		} catch (DataException | EntityException $e) {
-			$this->fail([
-				'message' => $e->getMessage(),
-			]);
+		} catch (Throwable $exception) {
+			return $this->failException($exception);
 		}
 
-		$this->success([
+		return $this->success([
 			'data' => $this->user->toExport(),
 		]);
 	}
@@ -70,9 +43,9 @@ class Profile extends AbstractRestController
 	/**
 	 * @Rest(method="GET", route="/ping")
 	 */
-	public function ping(): void
+	public function ping(): bool
 	{
-		$this->success([
+		return $this->success([
 			'data' => $this->user->toExport(),
 		]);
 	}

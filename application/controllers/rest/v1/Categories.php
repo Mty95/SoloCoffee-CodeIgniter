@@ -9,7 +9,7 @@ use App\Model\User\User;
 use Mty95\NewFramework\AbstractRestController;
 use NewFramework\Entity;
 
-class Categories extends AbstractRestController
+class Categories extends \Core\API\Authenticated
 {
     protected $repository;
     protected $facade;
@@ -22,64 +22,46 @@ class Categories extends AbstractRestController
 	 */
 	protected $user;
 
+	/**
+	 * @var \App\Model\CartService
+	 */
+	protected $cart;
+
     public function __construct()
 	{
 		parent::__construct();
-
+		$this->assertUserIsAuthenticated();
 		$this->repository = Repository::take();
 		$this->facade = new CategoryFacade();
 
-		$this->auth = new AuthorizationToken();
-		$this->userData = $this->auth->userData();
 
-		if (!isset($this->userData->status) && isset($this->userData->id))
-		{
-			$this->isAuthenticated = true;
-			$userRepository = \App\Model\User\Repository::take();
-			$this->user = $userRepository->find($this->userData->id);
-		}
-	}
-
-	private function assertUserIsAuthenticated(): void
-	{
-		if (!$this->isAuthenticated)
-		{
-			$this->fail(['message' => 'User not authenticated.']);
-			return;
-		}
+		$this->cart = \App\Services::take(\App\Model\CartService::class, [$this->user]);
 	}
 
 	/**
 	 * @Rest(method="GET", route="/")
 	 */
-    public function list(): void
+    public function list(): bool
 	{
-		$this->assertUserIsAuthenticated();
-
-		/** @var \App\Model\CartService $cart */
-		$cart = \App\Services::take(\App\Model\CartService::class, [$this->user]);
-
 		$this->success([
 			'categories' => Collection::toExport($this->repository->findAll()),
-			'cart' => $cart->getDetails(),
+			'cart' => $this->cart->getDetails(),
 		]);
 	}
 
 	/**
 	 * @Rest(method="GET", route="/slug/{slug}")
 	 * @param Category $category
+	 * @return bool
 	 */
-    public function listByCategory(Category $category): void
+    public function listByCategory(Category $category): bool
 	{
-		/** @var \App\Model\CartService $cart */
-		$cart = Services::take(\App\Model\CartService::class, [$this->user]);
-
 		$productRepository = \App\Model\Product\Repository::take();
 		$products = $productRepository->getByCategory($category);
 
-		$this->success([
+		return $this->success([
 			'category' => $category->toExport(),
-			'products' => $cart->getProductsDetails($products),
+			'products' => $this->cart->getProductsDetails($products),
 //			'products' => Collection::toExport($products),
 		]);
 	}
@@ -88,54 +70,12 @@ class Categories extends AbstractRestController
 	 * @Rest(method="GET", route="/{id}")
 	 *
 	 * @param Entity $entity
+	 * @return bool
 	 */
-    public function show(Entity $entity): void
+    public function show(Entity $entity): bool
 	{
-        $this->success([
+        return $this->success([
             'entity' => $entity->toArray(),
         ]);
-	}
-
-	/**
-	 * @Rest(method="POST", route="/")
-	 *
-	 * @param Entity $entity
-	 */
-    public function create(): void
-	{
-		$entity = new Entity();
-		$entity->fill((array) $this->post());
-		$this->repository->save($entity);
-
-		$this->success([
-            'entity_id' => $entity->id,
-        ]);
-	}
-
-	/**
-	 * @Rest(method="PUT", route="/{id}")
-	 *
-	 * @param Entity $entity
-	 */
-    public function update(Entity $entity): void
-	{
-		$entity->fill((array) $this->post());
-		$this->repository->save($entity);
-
-		$this->success([
-            'entity' => $entity->toArray(),
-        ]);
-	}
-
-	/**
-	 * @Rest(method="DELETE", route="/{id}")
-	 *
-	 * @param Entity $entity
-	 */
-    public function remove(Entity $entity): void
-	{
-        $this->repository->delete($entity);
-
-        $this->success(['method' => 'remove']);
 	}
 }
