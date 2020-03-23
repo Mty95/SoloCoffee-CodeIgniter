@@ -27,7 +27,7 @@ class CustomerAddress extends \NewFramework\Entity
 		'cellphone' => null,
 		'line1' => null,
 		'line2' => null,
-		'map_position' => null,
+		'map_position' => null/*['lat' => '', 'lng' => '', 'z' => 18]*/,
 		'created_at' => null,
 		'updated_at' => null,
 		'deleted_at' => null,
@@ -35,7 +35,12 @@ class CustomerAddress extends \NewFramework\Entity
     
     protected $protected = ['id'];
 
-    public function toExport()
+    public function __construct(array $attributes = null)
+	{
+		parent::__construct($attributes);
+	}
+
+	public function toExport()
     {
 		return [
 			'id' => $this->id,
