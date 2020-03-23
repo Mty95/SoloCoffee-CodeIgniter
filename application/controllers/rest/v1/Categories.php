@@ -6,10 +6,10 @@ use App\Model\Category\Category;
 use App\Model\Category\CategoryFacade;
 use App\Model\Category\Repository;
 use App\Model\User\User;
-use Mty95\NewFramework\NewRestController;
+use Mty95\NewFramework\AbstractRestController;
 use NewFramework\Entity;
 
-class Categories extends NewRestController
+class Categories extends AbstractRestController
 {
     protected $repository;
     protected $facade;
@@ -56,12 +56,12 @@ class Categories extends NewRestController
 	{
 		$this->assertUserIsAuthenticated();
 
-		/** @var \App\Model\Cart $cart */
-		$cart = \App\Services::take(\App\Model\Cart::class, [$this->user]);
+		/** @var \App\Model\CartService $cart */
+		$cart = \App\Services::take(\App\Model\CartService::class, [$this->user]);
 
 		$this->success([
 			'categories' => Collection::toExport($this->repository->findAll()),
-			'details' => $cart->getDetails(),
+			'cart' => $cart->getDetails(),
 		]);
 	}
 
@@ -71,12 +71,16 @@ class Categories extends NewRestController
 	 */
     public function listByCategory(Category $category): void
 	{
+		/** @var \App\Model\CartService $cart */
+		$cart = Services::take(\App\Model\CartService::class, [$this->user]);
+
 		$productRepository = \App\Model\Product\Repository::take();
 		$products = $productRepository->getByCategory($category);
 
 		$this->success([
 			'category' => $category->toExport(),
-			'products' => Collection::toExport($products),
+			'products' => $cart->getProductsDetails($products),
+//			'products' => Collection::toExport($products),
 		]);
 	}
 

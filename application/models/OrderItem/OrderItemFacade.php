@@ -38,7 +38,7 @@ class OrderItemFacade
 
         if (!$isValidate)
         {
-            throw ValidationException::notValid();
+			throw ValidationException::notValid($this->errors());
         }
 
         return new OrderItem($data);

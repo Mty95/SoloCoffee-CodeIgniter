@@ -38,7 +38,7 @@ class CategoryFacade
 
         if (!$isValidate)
         {
-            throw ValidationException::notValid();
+			throw ValidationException::notValid($this->errors());
         }
 
         return new Category($data);

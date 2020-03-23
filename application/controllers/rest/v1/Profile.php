@@ -4,11 +4,11 @@ use App\Library\Mty95\AuthorizationToken;
 use App\Model\User\Repository;
 use App\Model\User\UserFacade;
 use Mty95\NewFramework\Exceptions\DataException;
-use Mty95\NewFramework\NewRestController;
+use Mty95\NewFramework\AbstractRestController;
 use NewFramework\Exceptions\EntityException;
 use NewFramework\Exceptions\ValidationException;
 
-class Profile extends NewRestController
+class Profile extends AbstractRestController
 {
     protected $repository;
     protected $facade;

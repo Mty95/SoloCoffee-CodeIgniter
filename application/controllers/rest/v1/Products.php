@@ -2,12 +2,20 @@
 
 use App\Library\Collection;
 use App\Model\Product\Product;
-use Mty95\NewFramework\NewRestController;
+use Mty95\NewFramework\AbstractRestController;
 
-class Products extends NewRestController
+class Products extends AbstractRestController
 {
     protected $repository;
     protected $facade;
+
+	protected $auth;
+	protected $userData;
+	protected $isAuthenticated = false;
+	/**
+	 * @var \App\Model\User\User $user
+	 */
+	protected $user;
 
     public function __construct()
 	{
@@ -15,6 +23,25 @@ class Products extends NewRestController
 
 		$this->repository = \App\Model\Product\Repository::take();
 		$this->facade = new \App\Model\Product\ProductFacade();
+
+		$this->auth = new \App\Library\Mty95\AuthorizationToken();
+		$this->userData = $this->auth->userData();
+
+		if (!isset($this->userData->status) && isset($this->userData->id))
+		{
+			$this->isAuthenticated = true;
+			$userRepository = \App\Model\User\Repository::take();
+			$this->user = $userRepository->find($this->userData->id);
+		}
+	}
+
+	private function assertUserIsAuthenticated(): void
+	{
+		if (!$this->isAuthenticated)
+		{
+			$this->fail(['message' => 'User not authenticated.']);
+			return;
+		}
 	}
 
 	/**
@@ -22,20 +49,26 @@ class Products extends NewRestController
 	 */
     public function list(): void
 	{
+		/** @var \App\Model\Cart $cart */
+		$cart = Services::take(\App\Model\Cart::class, [$this->user]);
+
 		$this->success([
-			'data' => Collection::toArray($this->repository->findAll())
+			'data' => $cart->getProductsDetails($this->repository->findAll())
 		]);
 	}
 
 	/**
 	 * @Rest(method="GET", route="/{slug}")
 	 *
-	 * @param Product $entity
+	 * @param Product $product
 	 */
-    public function show(Product $entity): void
+    public function show(Product $product): void
 	{
+		/** @var \App\Model\Cart $cart */
+		$cart = Services::take(\App\Model\Cart::class, [$this->user]);
+
         $this->success([
-            'entity' => $entity->toExport(),
+            'product' => $cart->getProductDetails($product),
         ]);
 	}
 

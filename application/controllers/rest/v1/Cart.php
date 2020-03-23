@@ -1,13 +1,26 @@
 <?php
 
 use App\Library\Mty95\AuthorizationToken;
+use App\Model\CartService;
+use App\Model\Category\Category;
 use App\Model\Product\Product;
 use App\Model\User\Repository;
 use App\Model\User\User;
-use Mty95\NewFramework\NewRestController;
+use Core\API\Authenticated;
+use Mty95\NewFramework\AbstractRestController;
 use NewFramework\Exceptions\ValidationException;
 
-class Cart extends NewRestController
+/**
+ * Class Cart
+ *
+ * Pending 2020-03-18:
+ * https://symfonycasts.com/screencast/symfony
+ * https://laracasts.com/series/whats-new-in-laravel-7
+ * https://www.youtube.com/playlist?list=PLEkJYA4gJb78lIOKjZ0tJ9rWszT6uCTJH
+ * https://freek.dev/1582-how-to-write-exceptionally-good-exceptions-in-php
+ *
+ */
+class Cart extends Authenticated
 {
     protected $repository;
     protected $facade;
@@ -15,36 +28,45 @@ class Cart extends NewRestController
 	protected $auth;
 	protected $userData;
 	protected $isAuthenticated = false;
+
 	/**
-	 * @var User $user
+	 * @var CartService
 	 */
-	protected $user;
+	protected $cart;
 
 	public function __construct()
 	{
 		parent::__construct();
+		$this->assertUserIsAuthenticated();
 
 		$this->repository = null;
 		$this->facade = null;
-
-		$this->auth = new AuthorizationToken();
-		$this->userData = $this->auth->userData();
-
-		if (!isset($this->userData->status) && isset($this->userData->id))
-		{
-			$this->isAuthenticated = true;
-			$userRepository = Repository::take();
-			$this->user = $userRepository->find($this->userData->id);
-		}
+		$this->cart = Services::take(CartService::class, [$this->user]);
 	}
 
-	private function assertUserIsAuthenticated(): void
+	/**
+	 * @Rest(method="GET", route="/item/{slug}")
+	 * @param Product $product
+	 */
+	public function getProduct(Product $product): void
 	{
-		if (!$this->isAuthenticated)
-		{
-			$this->fail(['message' => 'User not authenticated.']);
-			return;
-		}
+		$this->success([
+			'item' => $this->cart->getItemDetails($product),
+			'cart' => $this->cart->getDetails(),
+		]);
+	}
+
+	/**
+	 * @Rest(method="GET", route="/category/{slug}")
+	 * @param Category $category
+	 */
+	public function getProductFromCategory(Category $category): void
+	{
+		$this->success([
+			'cart' => $this->cart->getDetails(),
+			'category' => $category->toExport(),
+			'products' => $this->cart->getItemsFromCategory($category),
+		]);
 	}
 
 	/**
@@ -52,15 +74,8 @@ class Cart extends NewRestController
 	 */
 	public function showDetails(): void
 	{
-		$this->assertUserIsAuthenticated();
-
-		/** @var \App\Model\Cart $cart */
-		$cart = Services::take(\App\Model\Cart::class, [$this->user]);
-
-		$result = $cart->getDetails();
-
 		$this->success([
-			'details' => $result,
+			'cart' => $this->cart->getDetails(),
 		]);
 	}
 
@@ -69,20 +84,16 @@ class Cart extends NewRestController
 	 */
     public function addToCart(): void
 	{
-		$this->assertUserIsAuthenticated();
-
-		/** @var \App\Model\Cart $cart */
-		$cart = Services::take(\App\Model\Cart::class, [$this->user]);
-
 		try {
-			$result = $cart->addItem($this->put());
+			$product = $this->cart->addItem($this->put());
 		} catch (ValidationException $e) {
-			$this->fail(['message' => $e->getMessage(), 'errors' => $cart->errors()]);
+			$this->fail(['message' => $e->getMessage(), 'errors' => $this->cart->errors()]);
 			return;
 		}
 
 		$this->success([
-			'details' => $result,
+			'product' => $this->cart->getItemDetails($product),
+			'cart' => $this->cart->getDetails(),
 		]);
 	}
 
@@ -91,20 +102,16 @@ class Cart extends NewRestController
 	 */
 	public function updateCart(): void
 	{
-		$this->assertUserIsAuthenticated();
-
-		/** @var \App\Model\Cart $cart */
-		$cart = Services::take(\App\Model\Cart::class, [$this->user]);
-
 		try {
-			$result = $cart->updateItem($this->patch());
+			$product = $this->cart->updateItem($this->patch());
 		} catch (ValidationException $e) {
-			$this->fail(['message' => $e->getMessage(), 'errors' => $cart->errors()]);
+			$this->fail(['message' => $e->getMessage(), 'errors' => $this->cart->errors()]);
 			return;
 		}
 
 		$this->success([
-			'details' => $result,
+			'product' => $this->cart->getItemDetails($product),
+			'cart' => $this->cart->getDetails(),
 		]);
 	}
 
@@ -115,19 +122,15 @@ class Cart extends NewRestController
 	 */
 	public function removeFromCart(Product $product): void
 	{
-		$this->assertUserIsAuthenticated();
-		/** @var \App\Model\Cart $cart */
-		$cart = Services::take(\App\Model\Cart::class, [$this->user]);
-
 		try {
-			$result = $cart->removeItem($product);
+			$this->cart->removeItem($product);
 		} catch (Exception $e) {
-			$this->fail(['message' => $e->getMessage(), 'errors' => $cart->errors()]);
+			$this->fail(['message' => $e->getMessage(), 'errors' => $this->cart->errors()]);
 			return;
 		}
 
 		$this->success([
-			'details' => $result,
+			'cart' => $this->cart->getDetails(),
 		]);
 	}
 }

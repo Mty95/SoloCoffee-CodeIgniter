@@ -41,7 +41,7 @@ class UserFacade
 
         if (!$isValidate)
         {
-            throw ValidationException::notValid();
+            throw ValidationException::notValid($this->errors());
         }
 
         return new User($data);
@@ -59,7 +59,7 @@ class UserFacade
 
     	if (!$isValidate)
 		{
-			throw ValidationException::notValid();
+			throw ValidationException::notValid($this->errors());
 		}
 
     	$user = $this->repository->where('username', $data['username'])->get();
@@ -85,7 +85,7 @@ class UserFacade
 
 		if (!$isValidate)
 		{
-			throw ValidationException::notValid();
+			throw ValidationException::notValid($this->errors());
 		}
 
 		$user = new User($data);
@@ -119,7 +119,7 @@ class UserFacade
 
 		if (!$isValidate)
 		{
-			throw ValidationException::notValid();
+			throw ValidationException::notValid($this->errors());
 		}
 
 		$user->fill($data);

@@ -3,6 +3,7 @@ namespace App\Model\PaymentMethod;
 
 use App\Model\Cart\Cart;
 use App\Model\CartAddress\CartAddress;
+use App\Model\CustomerAddress\CustomerAddress;
 use App\Model\Order\Order;
 use App\Model\User\User;
 use Culqi\Charges;
@@ -10,8 +11,11 @@ use NewFramework\Logger;
 
 class PagoEfectivo extends Method
 {
+	const METHOD_NAME = 'pago_efectivo';
+
 	protected $additional_data = [];
-	protected $method_name = 'pago_efectivo';
+	protected $method_name = self::METHOD_NAME;
+	protected $method_title = 'PagoEfectivo';
 	protected $can_processing = false;
 	protected $is_offline = true;
 	protected $currencies_supported = ['PEN'];
@@ -23,15 +27,15 @@ class PagoEfectivo extends Method
 
 	public function __construct()
 	{
-		$this->config = get_config()['payment_methods']['pago_efectivo'];
+		$this->config = get_config()['payment_methods'][self::METHOD_NAME];
 	}
 
-	public function execute(Cart $cart, CartAddress $address, User $user, array $data = []): PagoEfectivo
+	public function execute(Cart $cart, CustomerAddress $address, User $user, array $data = []): PagoEfectivo
 	{
 		return $this;
 	}
 
-	public function executeOffline(Order $order, CartAddress $address, User $user, array $data = []): PagoEfectivo
+	public function executeOffline(Order $order, CustomerAddress $address, User $user, array $data = []): PagoEfectivo
 	{
 		$client = new PagoEfectivoClient(
 			PagoEfectivoClient::MODE_INTEGRATION,

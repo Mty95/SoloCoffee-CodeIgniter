@@ -25,4 +25,9 @@ class Repository extends \NewFramework\Repository
 	{
 		return $this->where('category_id', $category->id)->findAll();
     }
+
+	public function findBySlug(string $slug): ?Product
+	{
+		return $this->where('slug', $slug)->get();
+    }
 }

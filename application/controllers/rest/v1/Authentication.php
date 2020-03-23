@@ -4,7 +4,7 @@ use App\Exceptions\ValidationFieldException;
 use App\Library\Collection;
 use App\Model\User\UserFacade;
 use Mty95\NewFramework\Exceptions\DataException;
-use Mty95\NewFramework\NewRestController;
+use Mty95\NewFramework\AbstractRestController;
 use NewFramework\Entity;
 use NewFramework\Exceptions\EntityException;
 use NewFramework\Exceptions\ValidationException;
@@ -16,7 +16,7 @@ use NewFramework\Exceptions\ValidationException;
  * https://www.pinterest.com/pin/450852612686704550/
  * 
  */
-class Authentication extends NewRestController
+class Authentication extends AbstractRestController
 {
     protected $repository;
     protected $facade;
@@ -37,6 +37,7 @@ class Authentication extends NewRestController
 		$facade = new UserFacade();
 
 		try {
+			/** @var \App\Model\User\User $user */
 			$user = $facade->login((array)$this->post());
 		} catch (ValidationFieldException $e) {
 			$this->fail(['message' => $e->getMessage(), 'errors' => [$e->getField() => $e->getMessage()]]);
@@ -49,7 +50,7 @@ class Authentication extends NewRestController
 		$authToken = new \App\Library\Mty95\AuthorizationToken();
 
 		$this->success([
-			'user_details' => $user->toArray(),
+			'user_details' => $user->toExport(),
 			'username' => $user->username,
 			'auth_token' => $authToken->generateUserToken($user->id),
 		]);

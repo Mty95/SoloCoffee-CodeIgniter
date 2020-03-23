@@ -3,10 +3,10 @@
 use App\Library\Mty95\AuthorizationToken;
 use App\Model\User\Repository;
 use App\Model\User\User;
-use Mty95\NewFramework\NewRestController;
+use Mty95\NewFramework\AbstractRestController;
 use NewFramework\Exceptions\ValidationException;
 
-class Checkout extends NewRestController
+class Checkout extends AbstractRestController
 {
     protected $repository;
     protected $facade;
@@ -52,9 +52,8 @@ class Checkout extends NewRestController
 	public function getAddressInfo(): void
 	{
 		$this->assertUserIsAuthenticated();
-
-		/** @var \App\Model\Checkout $checkout */
-		$checkout = Services::take(\App\Model\Checkout::class, [$this->user]);
+		/*
+		$checkout = $this->getCheckoutModel();
 		$lastAddress = $checkout->getLastAddressInfo();
 		try {
 			$response = $checkout->getAddressInfo();
@@ -64,11 +63,21 @@ class Checkout extends NewRestController
 				'last_address' => $lastAddress,
 			]);
 			return;
+		}*/
+
+		$lastAddressId = 0;
+		$addresses = \App\Model\CustomerAddress\Repository::take()->where('user_id', $this->user->id)->findAll();
+		foreach ($addresses as $address)
+		{
+			$lastAddressId = $address->id;
+			break;
 		}
 
 		$this->success([
-			'address_data' => $response,
-			'last_address' => $lastAddress,
+//			'address_data' => $response,
+//			'last_address' => $lastAddress,
+			'addresses' => \App\Library\Collection::toExport($addresses),
+			'last_address_id' => $lastAddressId,
 
 		]);
 	}
@@ -79,9 +88,7 @@ class Checkout extends NewRestController
     public function setAddressInfo(): void
 	{
 		$this->assertUserIsAuthenticated();
-
-		/** @var \App\Model\Checkout $checkout */
-		$checkout = Services::take(\App\Model\Checkout::class, [$this->user]);
+		$checkout = $this->getCheckoutModel();
 		try {
 			$response = $checkout->setAddressInfo($this->post());
 		} catch (ValidationException $e) {
@@ -106,9 +113,7 @@ class Checkout extends NewRestController
 	public function getPaymentMethodInfo(): void
 	{
 		$this->assertUserIsAuthenticated();
-
-		/** @var \App\Model\Checkout $checkout */
-		$checkout = Services::take(\App\Model\Checkout::class, [$this->user]);
+		$checkout = $this->getCheckoutModel();
 
 		try {
 			$result = $checkout->getPaymentMethods();
@@ -129,9 +134,7 @@ class Checkout extends NewRestController
 	public function processPayment(): void
 	{
 		$this->assertUserIsAuthenticated();
-
-		/** @var \App\Model\Checkout $checkout */
-		$checkout = Services::take(\App\Model\Checkout::class, [$this->user]);
+		$checkout = $this->getCheckoutModel();
 
 		try {
 			$result = $checkout->processPayment($this->post());
@@ -141,5 +144,13 @@ class Checkout extends NewRestController
 		}
 
 		$this->success($result);
+	}
+
+	/**
+	 * @return \App\Model\Checkout
+	 */
+	private function getCheckoutModel(): \App\Model\Checkout
+	{
+		return Services::take(\App\Model\Checkout::class, [$this->user]);
 	}
 }

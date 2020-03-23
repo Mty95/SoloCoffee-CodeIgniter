@@ -3,6 +3,7 @@ namespace App\Model;
 
 use App\Library\Collection;
 use App\Model\CartAddress\CartAddress;
+use App\Model\CustomerAddress\CustomerAddress;
 use App\Model\Order\Order;
 use App\Model\Order\Repository;
 use App\Model\OrderAddress\OrderAddress;
@@ -70,16 +71,18 @@ class OrderService
 	{
 		$address = $this->addressRepository->where('order_id', $order->id)->get();
 		$items = $this->itemRepository->where('order_id', $order->id)->findAll();
+		$paymentData = $order->payment_data;
+		$paymentData['title'] = (PaymentMethod::getByName($order->payment_method))->getMethodTitle();
 
 		return [
 			'order' => $order->toExport(),
 			'address' => $address->toExport(),
-			'payment' => $order->payment_data,
+			'payment' => $paymentData,
 			'items' => Collection::toExport($items),
 		];
 	}
 
-	public function createOrder(\App\Model\Cart\Cart $cart, CartAddress $cartAddress, Method $method): Order
+	public function createOrder(\App\Model\Cart\Cart $cart, CustomerAddress $cartAddress, Method $method): Order
 	{
 		$order = new Order();
 		$order->fill($cart->toArray());

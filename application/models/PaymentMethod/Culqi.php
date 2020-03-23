@@ -3,14 +3,19 @@ namespace App\Model\PaymentMethod;
 
 use App\Model\Cart\Cart;
 use App\Model\CartAddress\CartAddress;
+use App\Model\CustomerAddress\CustomerAddress;
+use App\Model\Order\Order;
 use App\Model\User\User;
 use Culqi\Charges;
 use NewFramework\Logger;
 
 class Culqi extends Method
 {
+	const METHOD_NAME = 'culqi';
+
 	protected $additional_data = [];
-	protected $method_name = 'culqi';
+	protected $method_name = self::METHOD_NAME;
+	protected $method_title = 'Culqi';
 	protected $can_processing = true;
 	protected $is_offline = false;
 	protected $currencies_supported = ['PEN'];
@@ -22,10 +27,10 @@ class Culqi extends Method
 
 	public function __construct()
 	{
-		$this->config = get_config()['payment_methods']['culqi'];
+		$this->config = get_config()['payment_methods'][self::METHOD_NAME];
 	}
 
-	public function execute(Cart $cart, CartAddress $address, User $user, array $data = []): Culqi
+	public function execute(Cart $cart, CustomerAddress $address, User $user, array $data = []): Culqi
 	{
 		if (!isset($data['token']))
 		{
@@ -71,6 +76,11 @@ class Culqi extends Method
 			'reference_code' => $charge->source->iin->bin,
 		];
 
+		return $this;
+	}
+
+	public function executeOffline(Order $cart, CustomerAddress $address, User $user, array $data = [])
+	{
 		return $this;
 	}
 }

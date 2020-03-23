@@ -2,6 +2,7 @@
 namespace App\Model;
 
 use App\Library\Collection;
+use App\Model\CartItem;
 use App\Model\Product;
 use App\Model\User\Repository;
 use App\Model\User\User;
@@ -11,7 +12,13 @@ use Mty95\NewFramework\Validation\FacadeValidatorTrait;
 use NewFramework\Exceptions\EntityException;
 use NewFramework\Exceptions\ValidationException;
 
-class Cart
+/**
+ * Class CartOld
+ * @package App\Model
+ *
+ * @deprecated
+ */
+class CartOld
 {
 	use FacadeValidatorTrait;
 
@@ -41,6 +48,16 @@ class Cart
 	 */
 	private $cartItemRepository;
 
+	/**
+	 * @var \App\Model\Cart\Cart
+	 */
+	private $currentCart;
+
+	/**
+	 * @var ItemModel[]
+	 */
+	private $items = [];
+
 	public function __construct(
 		SimpleValidator $validator,
 		Product\Repository $productRepository,
@@ -54,7 +71,58 @@ class Cart
 		$this->cartRepository = $cartRepository;
 		$this->cartItemRepository = $cartItemRepository;
 		$this->user = $user;
+
+		$this->currentCart = $this->cartRepository->getFromUserOrCreateNew($this->user);
+
+		// Build Items with Product inside
+		/** @var CartItem\CartItem[] $items */
+		$items = $this->cartRepository->getItems($this->currentCart);
+		$productRepository = Product\Repository::take();
+		foreach ($items as $item)
+		{
+			$product = $productRepository->find($item->product_id);
+			$this->items[$product->id] = new ItemModel($item, $product);
+		}
 	}
+
+	/**
+	 * @return ItemModel[]
+	 */
+	public function getItems(): array
+	{
+		return $this->items;
+	}
+
+	public function getItemDetails(Product\Product $product): array
+	{
+		$details = [
+			'product' => $product->toExport(),
+			'in_cart' => false,
+			'amount' => 0,
+		];
+
+		/** @var CartItem\CartItem $item */
+		foreach ($this->cartRepository->getItems($this->currentCart) as $item)
+		{
+			if ($item->product_id === $product->id)
+			{
+				$details['in_cart'] = true;
+				$details['amount'] = $item->qty;
+			}
+		}
+
+		return $details;
+	}
+
+	public function getDetails(): array
+	{
+		return $this->showCartResponse($this->currentCart);
+	}
+
+
+
+	// -------------------------------------------------------------------------
+	// Refactoring this
 
 	/**
 	 * @param array $data
@@ -73,7 +141,7 @@ class Cart
 
 		if (!$isValid)
 		{
-			throw ValidationException::notValid();
+			throw ValidationException::notValid($this->errors());
 		}
 
 		$product = $this->productRepository->where('slug', $data['product'])->get();
@@ -99,7 +167,7 @@ class Cart
 
 		if (!$isValid)
 		{
-			throw ValidationException::notValid();
+			throw ValidationException::notValid($this->errors());
 		}
 
 		$product = $this->productRepository->where('slug', $data['product'])->get();
@@ -128,13 +196,6 @@ class Cart
 		return $this->showCartResponse($cart);
 	}
 
-	public function getDetails(): array
-	{
-		$cart = $this->cartRepository->getFromUserOrCreateNew($this->user);
-
-		return $this->showCartResponse($cart);
-	}
-
 	private function showCartResponse(\App\Model\Cart\Cart $cart): array
 	{
 		$items = $this->cartRepository->getItems($cart);
@@ -152,5 +213,17 @@ class Cart
 		$this->cartRepository->save($cart);
 
 		return array_merge($cart->toExport(), ['items' => Collection::toExport($items)]);
+	}
+
+	/**
+	 * @param Product\Product[] $products
+	 * @return array
+	 */
+	public function getProductsDetails(array $products): array
+	{
+		$cart = $this;
+		return array_map(static function (Product\Product $product) use ($cart) {
+			return $cart->getProductDetails($product);
+		}, $products);
 	}
 }

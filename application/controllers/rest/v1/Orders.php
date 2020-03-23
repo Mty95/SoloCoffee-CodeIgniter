@@ -6,9 +6,9 @@ use App\Model\Order\Order;
 use App\Model\OrderService;
 use App\Model\User\Repository;
 use App\Model\User\User;
-use Mty95\NewFramework\NewRestController;
+use Mty95\NewFramework\AbstractRestController;
 
-class Orders extends NewRestController
+class Orders extends AbstractRestController
 {
     protected $repository;
     protected $facade;

@@ -1,6 +1,8 @@
 <?php
 namespace App\Model\Order;
 
+use App\Model\PaymentMethod;
+
 /**
  * Class Order
  * @package App\Model\Order
@@ -48,6 +50,7 @@ class Order extends \NewFramework\Entity
     	return [
     		'increment_id' => $this->increment_id,
     		'status' => $this->status,
+			'status_name' => PaymentMethod::getStatusLabel($this->status),
     		'payment_method' => $this->payment_method,
     		'subtotal' => $this->subtotal,
     		'discount' => $this->discount,

@@ -1,7 +1,7 @@
 <?php
-use Mty95\NewFramework\NewRestController;
+use Mty95\NewFramework\AbstractRestController;
 
-class Quote extends NewRestController
+class Quote extends AbstractRestController
 {
     protected $repository;
     protected $facade;

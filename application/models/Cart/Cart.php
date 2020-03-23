@@ -11,6 +11,7 @@ use App\Model\Product\Product;
  *
  * @property-read int $id;
  * @property int $user_id;
+ * @property int $address_id;
  * @property float $subtotal;
  * @property float $discount;
  * @property float $shipping;
@@ -26,6 +27,7 @@ class Cart extends \NewFramework\Entity
     protected $attributes = [
         'id' => null,
 		'user_id' => null,
+		'address_id' => null,
 		'subtotal' => null,
 		'discount' => null,
 		'shipping' => null,
@@ -42,6 +44,7 @@ class Cart extends \NewFramework\Entity
 	public function toExport(): array
 	{
 		return [
+			'address_id' => $this->address_id,
 			'subtotal' => $this->subtotal,
 			'discount' => $this->discount,
 			'shipping' => $this->shipping,

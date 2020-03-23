@@ -11,6 +11,7 @@ return [
     ],
     'casts' => [
         'user_id' => 'int',
+        'address_id' => 'int',
         'subtotal' => 'float',
         'discount' => 'float',
         'shipping' => 'float',

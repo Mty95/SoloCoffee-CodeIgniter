@@ -38,7 +38,7 @@ class CartAddressFacade
 
         if (!$isValidate)
         {
-            throw ValidationException::notValid();
+			throw ValidationException::notValid($this->errors());
         }
 
         return new CartAddress($data);

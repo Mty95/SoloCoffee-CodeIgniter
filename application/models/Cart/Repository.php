@@ -40,6 +40,18 @@ class Repository extends \NewFramework\Repository
 		return $this->where('user_id', $user->id)->get();
 	}
 
+	public function getActiveFromUser(User $user): Cart
+	{
+		$cart = $this->getFromUser($user);
+
+		if (null === $cart)
+		{
+			throw new \Exception('This user does not have a active cart.');
+		}
+
+		return $cart;
+	}
+
 	public function getFromUserOrCreateNew(User $user): Cart
     {
 		$cart = $this->where('user_id', $user->id)->get();
